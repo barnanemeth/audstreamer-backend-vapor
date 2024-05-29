@@ -6,14 +6,26 @@ import FluentMySQLDriver
 import Vapor
 import VaporAPNS
 import APNSCore
+import ShellOut
 
 // configures your application
 public func configure(_ app: Application) async throws {
+    try initializeShell()
     configureDatabase(app)
     try addAndRunMigrations(app)
     try configureAPNS(app)
     try await fetchAppleJWKSKeys(app)
     try routes(app)
+}
+
+fileprivate func initializeShell() throws {
+    let shouldUseVirtualEnvironment = Environment.get("USE_PYTHON_VIRTUAL_ENV") == String(true)
+
+    try ShellUtil.checkNecessaryLaunchBinaries()
+    if shouldUseVirtualEnvironment {
+        try ShellUtil.createVirtualEnvironment()
+        try ShellUtil.installDownloader()
+    }
 }
 
 fileprivate func configureDatabase(_ app: Application) {
