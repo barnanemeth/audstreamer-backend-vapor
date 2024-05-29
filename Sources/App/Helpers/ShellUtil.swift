@@ -56,12 +56,14 @@ enum ShellUtil {
 extension ShellUtil {
     static func checkNecessaryLaunchBinaries() throws {
         for launchBinary in Constant.necessaryLaunchBinaries {
+            Logger.shellLogger.info("Checking launch binary \(launchBinary.location)")
             let output = try shellOut(to: "whereis \(launchBinary.location)")
 
             // TODO: check
-//            if output.components(separatedBy: " ").count < 2 {
-//                throw ShellUtilError.missingLaunchBinary(launchBinary.location)
-//            }
+            if output.components(separatedBy: " ").count < 2 {
+                Logger.shellLogger.error("Launch binary not found: \(launchBinary.location)")
+                throw ShellUtilError.missingLaunchBinary(launchBinary.location)
+            }
         }
     }
 
@@ -70,9 +72,11 @@ extension ShellUtil {
             try checkVirtualEnvironment()
         } catch {
             do {
+                Logger.shellLogger.info("Creating virtual python environment")
                 try shellOut(to: "\(LaunchBinary.python.location) -m venv \(Constant.defaultEnvironmentPath)")
                 try checkVirtualEnvironment()
             } catch {
+                Logger.shellLogger.error("Cannot reate virtual python environment")
                 try shellOut(to: "rm -rf \(Constant.defaultEnvironmentPath)")
                 throw ShellUtilError.cannotCreateVirtualEnvironment(error)
             }
@@ -80,6 +84,7 @@ extension ShellUtil {
     }
 
     static func installDownloader() throws {
+        Logger.shellLogger.info("Installing downloader")
         try shellOut(to: [
             environmentActivationCommand,
             "pip3 install youtube-dl git+https://github.com/barnanemeth/youtube-dl",
@@ -94,6 +99,7 @@ extension ShellUtil {
             commands.insert(environmentActivationCommand, at: .zero)
             commands.append("deactivate")
         }
+        Logger.shellLogger.info("Starting downlading video; URL: \(url); arguments: \(arguments)")
         return try shellOut(to: commands)
     }
 }
@@ -102,6 +108,7 @@ extension ShellUtil {
 
 extension ShellUtil {
     private static func checkVirtualEnvironment() throws {
+        Logger.shellLogger.info("Checking virtual python environment")
         try shellOut(to: [
             environmentActivationCommand,
             "deactivate"

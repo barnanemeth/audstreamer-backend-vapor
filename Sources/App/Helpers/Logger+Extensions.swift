@@ -10,4 +10,5 @@ import Vapor
 
 extension Logger {
     static let socketLogger = Logger(label: "socket")
+    static let shellLogger = Logger(label: "shell")
 }
