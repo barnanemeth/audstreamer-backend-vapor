@@ -11,7 +11,6 @@ import Fluent
 import VaporAPNS
 import APNSCore
 import SotoS3
-import NIOCore
 
 final class DownloadController {
 
@@ -123,7 +122,7 @@ extension DownloadController {
                 let episode = Episode()
                 episode.id = downloadResult.id
                 episode.title = downloadResult.title
-//                episode.description = downloadResult.description
+                episode.description = ""
                 episode.audio = "\(s3Config.publicURL)/\(downloadResult.id).\(FileType.audio.fileExtension)"
                 episode.audioLengthSec = downloadResult.duration
                 episode.maybeAudioInvalid = false
