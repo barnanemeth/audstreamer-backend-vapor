@@ -15,6 +15,7 @@ struct VideoDownloadResult: Decodable {
     let title: String
     let description: String
     let duration: Int
+    let thumbnail: URL?
 
     // MARK: Coding keys
 
@@ -23,6 +24,7 @@ struct VideoDownloadResult: Decodable {
         case title
         case description
         case duration
+        case thumbnail
     }
 
     // MARK: Init
@@ -34,5 +36,6 @@ struct VideoDownloadResult: Decodable {
         self.title = try container.decode(String.self, forKey: .title)
         self.description = try container.decode(String.self, forKey: .description)
         self.duration = try container.decode(Int.self, forKey: .duration)
+        self.thumbnail = try container.decode(URL.self, forKey: .thumbnail)
     }
 }

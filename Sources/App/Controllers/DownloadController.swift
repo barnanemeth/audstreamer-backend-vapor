@@ -21,20 +21,20 @@ final class DownloadController {
     }
 
     private enum FileType {
-        case audio
-        case image
+        case mp3
+        case image(String)
 
         var contentType: String {
             switch self {
-            case .audio: "audio/mpeg"
-            case .image: "image/webp"
+            case .mp3: "audio/mpeg"
+            case .image: "image/\(fileExtension)"
             }
         }
 
         var fileExtension: String {
             switch self {
-            case .audio: "mp3"
-            case .image: "webp"
+            case .mp3: "mp3"
+            case let .image(fileExtension): fileExtension
             }
         }
     }
@@ -105,29 +105,29 @@ extension DownloadController {
                     downloadOptions.append(.ffmpegLocation(ffmpegLocation))
                 }
                 let arguments = downloadOptions.map { $0.argument }
-                let json = try ShellUtil.downloadVideo(url: url.absoluteString, with: arguments)
-                let downloadResult = try decodeResult(from: json)
+                let resultJson = try ShellUtil.downloadVideo(url: url.absoluteString, with: arguments)
+                let downloadResult = try decodeResult(from: resultJson)
 
                 try await self.uploadFileAndDelete(
                     id: downloadResult.id,
                     directoryPath: application.directory.workingDirectory,
-                    fileType: .audio
+                    fileType: .mp3
                 )
-                try await self.uploadFileAndDelete(
-                    id: downloadResult.id,
-                    directoryPath: application.directory.workingDirectory,
-                    fileType: .image
+
+                let image = await uploadImageIfPossible(
+                    downloadResult: downloadResult,
+                    directoryPath: application.directory.workingDirectory
                 )
 
                 let episode = Episode()
                 episode.id = downloadResult.id
                 episode.title = downloadResult.title
                 episode.description = ""
-                episode.audio = "\(s3Config.publicURL)/\(downloadResult.id).\(FileType.audio.fileExtension)"
+                episode.audio = "\(s3Config.publicURL)/\(downloadResult.id).\(FileType.mp3.fileExtension)"
                 episode.audioLengthSec = downloadResult.duration
                 episode.maybeAudioInvalid = false
-                episode.image = "\(s3Config.publicURL)/\(downloadResult.id).\(FileType.image.fileExtension)"
-                episode.thumbnail = "\(s3Config.publicURL)/\(downloadResult.id).\(FileType.image.fileExtension)"
+                episode.image = image
+                episode.thumbnail = image
                 episode.publishDate = Int(Date.now.timeIntervalSince1970 * 1000)
                 try await episode.save(on: application.db)
 
@@ -150,6 +150,7 @@ extension DownloadController {
         guard let fileURL = URL(string: "file://\(directoryPath)/\(filename)") else {
             throw NSError(domain: "asd", code: 1)
         }
+        defer { try? fileManager.removeItem(at: fileURL) }
         _ = try await s3.putObject(
             S3.PutObjectRequest(
                 body: AWSPayload.data(Data(contentsOf: fileURL)),
@@ -158,7 +159,22 @@ extension DownloadController {
                 key: filename
             )
         )
-        try fileManager.removeItem(at: fileURL)
+    }
+
+    private func uploadImageIfPossible(downloadResult: VideoDownloadResult, directoryPath: String) async -> String? {
+        guard let thumbnailExtension = downloadResult.thumbnail?.lastPathComponent.components(separatedBy: ".").last else {
+            return nil
+        }
+        do {
+            try await self.uploadFileAndDelete(
+                id: downloadResult.id,
+                directoryPath: directoryPath,
+                fileType: .image(thumbnailExtension)
+            )
+            return "\(s3Config.publicURL)/\(downloadResult.id).\(thumbnailExtension)"
+        } catch {
+            return nil
+        }
     }
 }
 
