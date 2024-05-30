@@ -41,6 +41,7 @@ enum VideoDownloadOption {
     case audioQuality(AudioQuality)
     case preferFFMPEG
     case ffmpegLocation(String)
+    case outputTemplate(String)
 
     var argument: String {
         switch self {
@@ -54,6 +55,7 @@ enum VideoDownloadOption {
         case let .audioQuality(audioQuality): "--audio-quality \(audioQuality.value)"
         case .preferFFMPEG: "--prefer-ffmpeg"
         case let .ffmpegLocation(path): "--ffmpeg-location \(path)"
+        case let .outputTemplate(template): "-o \"\(template)\""
         }
     }
 }

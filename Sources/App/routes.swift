@@ -6,4 +6,5 @@ func routes(_ app: Application) throws {
     try app.register(collection: DevicesController())
     try app.register(collection: SocketHandler.shared)
     try app.register(collection: EpisodesMetaController())
+    try app.register(collection: DownloadController())
 }

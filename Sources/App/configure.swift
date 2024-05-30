@@ -19,13 +19,9 @@ public func configure(_ app: Application) async throws {
 }
 
 fileprivate func initializeShell() throws {
-    let shouldUseVirtualEnvironment = Environment.get("USE_PYTHON_VIRTUAL_ENV") == String(true)
-
     try ShellUtil.checkNecessaryLaunchBinaries()
-    if shouldUseVirtualEnvironment {
-        try ShellUtil.createVirtualEnvironment()
-        try ShellUtil.installDownloader()
-    }
+    try ShellUtil.createVirtualEnvironmentIfNeeded()
+    try ShellUtil.installDownloaderIfNeeded()
 }
 
 fileprivate func configureDatabase(_ app: Application) {

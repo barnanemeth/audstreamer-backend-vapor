@@ -82,6 +82,15 @@
       }
     },
     {
+      "identity" : "jmespath.swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/adam-fowler/jmespath.swift.git",
+      "state" : {
+        "revision" : "4513d319c4aaa6c3b2ac18e1e6566a803515ad91",
+        "version" : "1.0.2"
+      }
+    },
+    {
       "identity" : "jwt-kit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/jwt-kit.git",
@@ -142,6 +151,24 @@
       "state" : {
         "revision" : "cdd350a41eacf2dc19008e02975f71d3a3e67687",
         "version" : "1.0.2"
+      }
+    },
+    {
+      "identity" : "soto",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/soto-project/soto",
+      "state" : {
+        "revision" : "c28c3efa72e6beceae6f38f8c8fe18e7c57e3418",
+        "version" : "6.8.0"
+      }
+    },
+    {
+      "identity" : "soto-core",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/soto-project/soto-core.git",
+      "state" : {
+        "revision" : "3ed66ec536bc372360d7e3ec39a5e8b1870747ea",
+        "version" : "6.5.2"
       }
     },
     {
