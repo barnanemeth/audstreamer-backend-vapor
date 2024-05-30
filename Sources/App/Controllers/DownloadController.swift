@@ -46,6 +46,7 @@ final class DownloadController {
     private let bundleID = Environment.get("BUNDLE_ID")
     private let ffmpegLocation = Environment.get("FFMPEG_LOCATION")
     private let s3Config = S3Config()
+    private let queue = OperationQueue()
 
     private lazy var s3: S3 = {
         let client = AWSClient(
@@ -76,6 +77,11 @@ extension DownloadController {
     private func download(request: Request) async throws -> Response {
         try DownloadRequest.validate(content: request)
         let downloadRequest = try request.content.decode(DownloadRequest.self)
+
+        queue.addOperation {
+            print("success")
+        }
+
         downloadVideo(
             url: downloadRequest.videoURL,
             shouldSendNotification: downloadRequest.sendNotification ?? false,
