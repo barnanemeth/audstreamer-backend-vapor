@@ -34,7 +34,7 @@ extension DownloadController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         routes
             .grouped(Constant.indexPath)
-            .grouped(APIKeyAuthenticator())
+            .grouped(APIKeyAuthenticator(), UsernamePasswordAuthenticator())
             .post(use: download)
     }
 }
