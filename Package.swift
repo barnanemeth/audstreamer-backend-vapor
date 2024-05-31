@@ -14,7 +14,8 @@ let package = Package(
         .package(url: "https://github.com/vapor/apns", from: "4.0.0"),
         .package(url: "https://github.com/vapor/jwt-kit.git", from: "4.13.1"),
         .package(url: "https://github.com/JohnSundell/ShellOut", from: "2.3.0"),
-        .package(url: "https://github.com/soto-project/soto", from: "6.8.0")
+        .package(url: "https://github.com/soto-project/soto", from: "6.8.0"),
+        .package(url: "https://github.com/mattmassicotte/Queue", from: "0.1.4")
     ],
     targets: [
         .executableTarget(
@@ -27,7 +28,8 @@ let package = Package(
                 .product(name: "VaporAPNS", package: "apns"),
                 .product(name: "JWTKit", package: "jwt-kit"),
                 .product(name: "ShellOut", package: "ShellOut"),
-                .product(name: "SotoS3", package: "soto")
+                .product(name: "SotoS3", package: "soto"),
+                .product(name: "Queue", package: "Queue")
             ]
         ),
         .testTarget(name: "AppTests", dependencies: [

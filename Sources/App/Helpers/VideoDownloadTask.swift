@@ -1,5 +1,5 @@
 //
-//  VideoDownloadOperation.swift
+//  VideoDownloadTask.swift
 //
 //
 //  Created by Barna Nemeth on 31/05/2024.
@@ -15,7 +15,7 @@ enum VideoDownloadError: Error {
     case invalidURL
 }
 
-final class VideoDownloadOperation: AsyncOperation {
+struct VideoDownloadTask {
 
     // MARK: Constants
 
@@ -88,44 +88,38 @@ final class VideoDownloadOperation: AsyncOperation {
 
     // MARK: Internal methods
 
-    override func main() {
-        task = Task<Void, Error> { [unowned self] in
-            do {
-                let downloadResult = try downloadVideo()
+    func run() async throws {
+        defer { try? client.syncShutdown() }
 
-                try await uploadFileAndDelete(
-                    id: downloadResult.id,
-                    directoryPath: application.directory.workingDirectory,
-                    fileType: .mp3
-                )
+        do {
+            let downloadResult = try downloadVideo()
 
-                let image = await uploadImageIfPossible(
-                    downloadResult: downloadResult,
-                    directoryPath: application.directory.workingDirectory
-                )
+            try await uploadFileAndDelete(
+                id: downloadResult.id,
+                directoryPath: application.directory.workingDirectory,
+                fileType: .mp3
+            )
 
-                let episode = try await saveEpisode(downloadResult: downloadResult, image: image)
+            let image = await uploadImageIfPossible(
+                downloadResult: downloadResult,
+                directoryPath: application.directory.workingDirectory
+            )
 
-                try? await sendNotificationsIfNeeded(for: episode)
+            let episode = try await saveEpisode(downloadResult: downloadResult, image: image)
 
-                application.logger.info("Video downloading is successfully finished (\(videoURL))")
-                finishAndCleanup()
-            } catch {
-                application.logger.error("Error occurred during video downloading (\(videoURL)): \(error)")
-                finishAndCleanup()
-            }
+            try? await sendNotificationsIfNeeded(for: episode)
+
+            application.logger.info("Video downloading is successfully finished (\(videoURL))")
+        } catch {
+            application.logger.error("Error occurred during video downloading (\(videoURL)): \(error)")
+            throw error
         }
-    }
-
-    override func cancel() {
-        try? client.syncShutdown()
-        task?.cancel()
     }
 }
 
 // MARK: - Helpers
 
-extension VideoDownloadOperation {
+extension VideoDownloadTask {
     private func downloadVideo() throws -> VideoDownloadResult {
         var downloadOptions = Constant.baseDownloadOptions
         if let ffmpegLocation {
@@ -208,10 +202,5 @@ extension VideoDownloadOperation {
         for token in notificationTokens {
             _ = try? await application.apns.client.sendAlertNotification(notification, deviceToken: token)
         }
-    }
-
-    private func finishAndCleanup() {
-        try? client.syncShutdown()
-        finish()
     }
 }

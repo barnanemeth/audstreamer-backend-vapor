@@ -11,6 +11,7 @@ import Fluent
 import VaporAPNS
 import APNSCore
 import SotoS3
+import Queue
 
 final class DownloadController {
 
@@ -23,12 +24,8 @@ final class DownloadController {
     // MARK: Private properties
 
     private let httpClient = HTTPClient(eventLoopGroupProvider: .singleton)
-    private lazy var videoDownloadQueue: OperationQueue = {
-        let queue = OperationQueue()
-        queue.qualityOfService = .background
-        queue.maxConcurrentOperationCount = 2
-        return queue
-    }()
+    private let videoDownloadQueue = AsyncQueue(attributes: .concurrent)
+
 }
 
 // MARK: - RouteCollection
@@ -48,15 +45,15 @@ extension DownloadController {
     private func download(request: Request) async throws -> Response {
         try DownloadRequest.validate(content: request)
         let downloadRequest = try request.content.decode(DownloadRequest.self)
-        
+
         downloadRequest.videoURLs.forEach { videoURL in
-            let operation = VideoDownloadOperation(
+            let task = VideoDownloadTask(
                 videoURL: videoURL,
                 shouldSendNotification: downloadRequest.sendNotification ?? false,
                 application: request.application,
                 httpClient: httpClient
             )
-            videoDownloadQueue.addOperation(operation)
+            videoDownloadQueue.addOperation { try await task.run() }
         }
 
         return Response(status: .ok)
