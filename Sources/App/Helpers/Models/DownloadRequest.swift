@@ -12,13 +12,13 @@ struct DownloadRequest: Codable, Validatable {
 
     // MARK: Properties
 
-    let videoURL: URL
+    let videoURLs: [URL]
     let sendNotification: Bool?
 
     // MARK: Validatable
 
     static func validations(_ validations: inout Validations) {
-        validations.add("videoURL", as: URL.self, required: true)
+        validations.add("videoURLs", as: [URL].self, required: true)
         validations.add("sendNotification", as: Bool.self, required: false)
     }
 }
