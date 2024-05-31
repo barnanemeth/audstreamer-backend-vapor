@@ -8,9 +8,6 @@
 import Foundation
 import Vapor
 import Fluent
-import VaporAPNS
-import APNSCore
-import SotoS3
 import Queue
 
 final class DownloadController {
@@ -43,8 +40,8 @@ extension DownloadController: RouteCollection {
 
 extension DownloadController {
     private func download(request: Request) async throws -> Response {
-        try DownloadRequest.validate(content: request)
-        let downloadRequest = try request.content.decode(DownloadRequest.self)
+        try DownloadEpisodeRequest.validate(content: request)
+        let downloadRequest = try request.content.decode(DownloadEpisodeRequest.self)
 
         downloadRequest.videoURLs.forEach { videoURL in
             let task = VideoDownloadTask(

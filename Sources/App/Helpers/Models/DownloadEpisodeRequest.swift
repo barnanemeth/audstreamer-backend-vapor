@@ -1,5 +1,5 @@
 //
-//  DownloadRequest.swift
+//  DownloadEpisodeRequest.swift
 //
 //
 //  Created by Barna Nemeth on 29/05/2024.
@@ -8,7 +8,7 @@
 import Foundation
 import Vapor
 
-struct DownloadRequest: Codable, Validatable {
+struct DownloadEpisodeRequest: Codable, Validatable {
 
     // MARK: Properties
 
