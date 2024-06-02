@@ -8,7 +8,6 @@
 import Foundation
 import Vapor
 import Fluent
-import Queue
 
 final class DownloadController {
 
