@@ -53,6 +53,6 @@ extension DownloadController {
             videoDownloadQueue.addOperation { try await task.run() }
         }
 
-        return Response(status: .ok)
+        return Response(status: .accepted)
     }
 }

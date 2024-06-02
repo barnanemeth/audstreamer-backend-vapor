@@ -13,6 +13,7 @@ import SotoS3
 
 enum VideoDownloadError: Error {
     case invalidURL
+    case videoAlreadyExists
 }
 
 struct VideoDownloadTask {
@@ -92,6 +93,8 @@ struct VideoDownloadTask {
         defer { try? client.syncShutdown() }
 
         do {
+            try await checkExistingVideo()
+
             let downloadResult = try downloadVideo()
 
             try await uploadFileAndDelete(
@@ -120,6 +123,14 @@ struct VideoDownloadTask {
 // MARK: - Helpers
 
 extension VideoDownloadTask {
+    private func checkExistingVideo() async throws {
+        guard let components = URLComponents(url: videoURL, resolvingAgainstBaseURL: false),
+              let id = components.queryItems?.first(where: { $0.name == "v" })?.value else { return }
+        if (try? await Episode.find(id, on: application.db)) != nil {
+            throw VideoDownloadError.videoAlreadyExists
+        }
+    }
+
     private func downloadVideo() throws -> VideoDownloadResult {
         var downloadOptions = Constant.baseDownloadOptions
         if let ffmpegLocation {
