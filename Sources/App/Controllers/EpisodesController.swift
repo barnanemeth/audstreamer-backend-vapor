@@ -69,14 +69,7 @@ extension EpisodesController {
 
 extension EpisodesController {
     private func deleteEpisode(id: String, database: Database) async {
-        let episode = try? await Episode.query(on: database)
-            .group(.and) { group in
-                group
-                    .filter(\.$id, .equal, id)
-            }
-            .all().first
-
-        guard let episode else { return }
+        guard let episode = try? await Episode.find(id, on: database) else { return }
 
         let audio = episode.audio
         let image = episode.image
