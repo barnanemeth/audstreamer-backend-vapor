@@ -7,14 +7,15 @@ import Vapor
 import VaporAPNS
 import APNSCore
 import ShellOut
+import QueuesFluentDriver
 
-// configures your application
 public func configure(_ app: Application) async throws {
     try initializeShell()
-    configureDatabase(app)
+    try configureDatabase(app)
     try addAndRunMigrations(app)
     try configureAPNS(app)
     try await fetchAppleJWKSKeys(app)
+    try setupQueue(app)
     try routes(app)
 }
 
@@ -24,12 +25,12 @@ fileprivate func initializeShell() throws {
     try ShellUtil.installDownloaderIfNeeded()
 }
 
-fileprivate func configureDatabase(_ app: Application) {
+fileprivate func configureDatabase(_ app: Application) throws {
     guard let host = Environment.get("DATABASE_HOST"),
           let username = Environment.get("DATABASE_USERNAME"),
           let password = Environment.get("DATABASE_PASSWORD"),
           let database = Environment.get("DATABASE_NAME") else {
-        fatalError("Cannot initialize database driver")
+        throw BootstrapError.missingDatabaseConfig
     }
 
     let mysql = DatabaseConfigurationFactory.mysql(
@@ -46,6 +47,7 @@ fileprivate func addAndRunMigrations(_ app: Application) throws {
     app.migrations.add(CreateEpisode())
     app.migrations.add(CreateDevice())
     app.migrations.add(CreateUserEpisodeMetadata())
+    app.migrations.add(JobMetadataMigrate())
 
     try app.autoMigrate().wait()
 }
@@ -56,7 +58,7 @@ fileprivate func configureAPNS(_ app: Application) throws {
           let privateKeyBase64 = Environment.get("APNS_PRIVATE_KEY_BASE64"),
           let privateKeyData = Data(base64Encoded: privateKeyBase64),
           let privateKeyString = String(data: privateKeyData, encoding: .utf8) else {
-        fatalError("Cannot configure APNS")
+        throw BootstrapError.missingAPNSConfig
     }
 
     let environment: APNSEnvironment
@@ -88,7 +90,13 @@ fileprivate func fetchAppleJWKSKeys(_ app: Application) async throws {
     guard let body = try? await app.client.get(uri).body,
             let data = body.getData(at: .zero, length: body.readableBytes),
             let keys = String(data: data, encoding: .utf8) else {
-        fatalError("Cannot retreive Apple JWKS keys")
+        throw BootstrapError.cannoRetreiveJWKSKeys
     }
     AppleJWKSKeysStorage.keys = keys
+}
+
+fileprivate func setupQueue(_ app: Application) throws {
+    app.queues.use(.fluent())
+    app.queues.add(VideoDownloadJob())
+    try app.queues.startInProcessJobs(on: .default)
 }

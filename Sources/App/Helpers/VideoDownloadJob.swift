@@ -1,5 +1,5 @@
 //
-//  VideoDownloadTask.swift
+//  VideoDownloadJob.swift
 //
 //
 //  Created by Barna Nemeth on 31/05/2024.
@@ -7,16 +7,18 @@
 
 import Foundation
 import Vapor
+import Fluent
 import VaporAPNS
 import APNSCore
 import SotoS3
+import Queues
 
 enum VideoDownloadError: Error {
     case invalidURL
     case videoAlreadyExists
 }
 
-struct VideoDownloadTask {
+final class VideoDownloadJob {
 
     // MARK: Constants
 
@@ -55,28 +57,18 @@ struct VideoDownloadTask {
 
     // MARK: Private properties
 
-    private let videoURL: URL
-    private let shouldSendNotification: Bool
-    private let application: Application
-    private let httpClient: HTTPClient
-
-    private var task: Task<Void, Error>?
     private let jsonDecoder = JSONDecoder()
     private let fileManager = FileManager.default
     private let bundleID = Environment.get("BUNDLE_ID")
     private let ffmpegLocation = Environment.get("FFMPEG_LOCATION")
+    private let httpClient = HTTPClient()
     private let s3Config = S3Config()
     private let client: AWSClient
     private let s3: S3
 
     // MARK: Init
 
-    init(videoURL: URL, shouldSendNotification: Bool, application: Application, httpClient: HTTPClient) {
-        self.videoURL = videoURL
-        self.shouldSendNotification = shouldSendNotification
-        self.application = application
-        self.httpClient = httpClient
-
+    init() {
         client = AWSClient(
             credentialProvider: CredentialProviderFactory.static(
                 accessKeyId: s3Config.accessKeyID,
@@ -86,16 +78,26 @@ struct VideoDownloadTask {
         )
         s3 = S3(client: client, endpoint: s3Config.endpointURL)
     }
+}
 
-    // MARK: Internal methods
+// MARK: - AsyncJob
 
-    func run() async throws {
-        defer { try? client.syncShutdown() }
+extension VideoDownloadJob: AsyncJob {
+    func dequeue(_ context: Queues.QueueContext, _ payload: URL) async throws {
+        try await run(videoURL: payload, application: context.application)
+    }
+}
 
+// MARK: - Helpers
+
+extension VideoDownloadJob {
+    private func run(videoURL: URL, application: Application) async throws {
         do {
-            try await checkExistingVideo()
+            defer { try? client.syncShutdown() }
 
-            let downloadResult = try downloadVideo()
+            try await checkExistingVideo(videoURL: videoURL, application: application)
+
+            let downloadResult = try downloadVideo(videoURL: videoURL)
 
             try await uploadFileAndDelete(
                 id: downloadResult.id,
@@ -108,9 +110,9 @@ struct VideoDownloadTask {
                 directoryPath: application.directory.workingDirectory
             )
 
-            let episode = try await saveEpisode(downloadResult: downloadResult, image: image)
+            let episode = try await saveEpisode(downloadResult: downloadResult, image: image, database: application.db)
 
-            try? await sendNotificationsIfNeeded(for: episode)
+            try? await sendNotifications(for: episode, application: application)
 
             application.logger.info("Video downloading is successfully finished (\(videoURL))")
         } catch {
@@ -118,12 +120,8 @@ struct VideoDownloadTask {
             throw error
         }
     }
-}
 
-// MARK: - Helpers
-
-extension VideoDownloadTask {
-    private func checkExistingVideo() async throws {
+    private func checkExistingVideo(videoURL: URL, application: Application) async throws {
         guard let components = URLComponents(url: videoURL, resolvingAgainstBaseURL: false),
               let id = components.queryItems?.first(where: { $0.name == "v" })?.value else { return }
         if (try? await Episode.find(id, on: application.db)) != nil {
@@ -131,7 +129,7 @@ extension VideoDownloadTask {
         }
     }
 
-    private func downloadVideo() throws -> VideoDownloadResult {
+    private func downloadVideo(videoURL: URL) throws -> VideoDownloadResult {
         var downloadOptions = Constant.baseDownloadOptions
         if let ffmpegLocation {
             downloadOptions.append(.ffmpegLocation(ffmpegLocation))
@@ -178,7 +176,9 @@ extension VideoDownloadTask {
         }
     }
 
-    private func saveEpisode(downloadResult: VideoDownloadResult, image: String?) async throws -> Episode {
+    private func saveEpisode(downloadResult: VideoDownloadResult,
+                             image: String?,
+                             database: any Database) async throws -> Episode {
         let episode = Episode()
         episode.id = downloadResult.id
         episode.title = downloadResult.title
@@ -189,13 +189,11 @@ extension VideoDownloadTask {
         episode.image = image
         episode.thumbnail = image
         episode.publishDate = Int(Date.now.timeIntervalSince1970 * 1000)
-        try await episode.save(on: application.db)
+        try await episode.save(on: database)
         return episode
     }
 
-    private func sendNotificationsIfNeeded(for episode: Episode) async throws {
-        guard shouldSendNotification else { return }
-
+    private func sendNotifications(for episode: Episode, application: Application) async throws {
         let notificationTokens = try await Device.query(on: application.db).all(\.$notificationToken)
 
         let alert = APNSAlertNotificationContent(title: .raw(Constant.newEpisodeLoc), body: .raw(episode.title))

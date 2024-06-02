@@ -18,11 +18,6 @@ final class DownloadController {
         static let indexPath: PathComponent = "download"
     }
 
-    // MARK: Private properties
-
-    private let httpClient = HTTPClient(eventLoopGroupProvider: .singleton)
-    private let videoDownloadQueue = AsyncQueue(attributes: .concurrent)
-
 }
 
 // MARK: - RouteCollection
@@ -42,17 +37,9 @@ extension DownloadController {
     private func download(request: Request) async throws -> Response {
         try DownloadEpisodeRequest.validate(content: request)
         let downloadRequest = try request.content.decode(DownloadEpisodeRequest.self)
-
-        downloadRequest.videoURLs.forEach { videoURL in
-            let task = VideoDownloadTask(
-                videoURL: videoURL,
-                shouldSendNotification: downloadRequest.sendNotification ?? false,
-                application: request.application,
-                httpClient: httpClient
-            )
-            videoDownloadQueue.addOperation { try await task.run() }
+        for url in downloadRequest.videoURLs {
+            try await request.queue.dispatch(VideoDownloadJob.self, url as VideoDownloadJob.Payload)
         }
-
         return Response(status: .accepted)
     }
 }
