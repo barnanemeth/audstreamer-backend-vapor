@@ -10,7 +10,7 @@ import ShellOut
 import QueuesRedisDriver
 
 public func configure(_ app: Application) async throws {
-    try initializeShell()
+    try initializeShell(app)
     try configureDatabase(app)
     try addAndRunMigrations(app)
     try configureAPNS(app)
@@ -19,7 +19,9 @@ public func configure(_ app: Application) async throws {
     try routes(app)
 }
 
-fileprivate func initializeShell() throws {
+fileprivate func initializeShell(_ app: Application) throws {
+    guard app.isRunningInQueueMode else { return }
+
     try ShellUtil.checkNecessaryLaunchBinaries()
     try ShellUtil.createVirtualEnvironmentIfNeeded()
     try ShellUtil.installDownloaderIfNeeded()
@@ -85,6 +87,8 @@ fileprivate func configureAPNS(_ app: Application) throws {
 }
 
 fileprivate func fetchAppleJWKSKeys(_ app: Application) async throws {
+    guard !app.isRunningInQueueMode else { return }
+
     let uri = URI(string: "https://appleid.apple.com/auth/keys")
     guard let body = try? await app.client.get(uri).body,
             let data = body.getData(at: .zero, length: body.readableBytes),
@@ -96,8 +100,7 @@ fileprivate func fetchAppleJWKSKeys(_ app: Application) async throws {
 
 fileprivate func setupQueue(_ app: Application) throws {
     guard let redisURL = Environment.get("REDIS_URL") else { throw BootstrapError.missingRedisURL }
+
     try app.queues.use(.redis(url: redisURL))
     app.queues.add(VideoDownloadJob())
-
-    try app.queues.startInProcessJobs()
 }
