@@ -10,5 +10,6 @@ import Foundation
 enum BootstrapError: Error {
     case missingDatabaseConfig
     case missingAPNSConfig
-    case cannoRetreiveJWKSKeys
+    case cannotRetreiveJWKSKeys
+    case missingRedisURL
 }

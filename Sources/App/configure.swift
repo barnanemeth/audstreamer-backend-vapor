@@ -7,7 +7,7 @@ import Vapor
 import VaporAPNS
 import APNSCore
 import ShellOut
-import QueuesFluentDriver
+import QueuesRedisDriver
 
 public func configure(_ app: Application) async throws {
     try initializeShell()
@@ -47,7 +47,6 @@ fileprivate func addAndRunMigrations(_ app: Application) throws {
     app.migrations.add(CreateEpisode())
     app.migrations.add(CreateDevice())
     app.migrations.add(CreateUserEpisodeMetadata())
-    app.migrations.add(JobMetadataMigrate())
 
     try app.autoMigrate().wait()
 }
@@ -90,13 +89,13 @@ fileprivate func fetchAppleJWKSKeys(_ app: Application) async throws {
     guard let body = try? await app.client.get(uri).body,
             let data = body.getData(at: .zero, length: body.readableBytes),
             let keys = String(data: data, encoding: .utf8) else {
-        throw BootstrapError.cannoRetreiveJWKSKeys
+        throw BootstrapError.cannotRetreiveJWKSKeys
     }
     AppleJWKSKeysStorage.keys = keys
 }
 
 fileprivate func setupQueue(_ app: Application) throws {
-    app.queues.use(.fluent())
+    guard let redisURL = Environment.get("REDIS_URL") else { throw BootstrapError.missingRedisURL }
+    try app.queues.use(.redis(url: redisURL))
     app.queues.add(VideoDownloadJob())
-    try app.queues.startInProcessJobs(on: .default)
 }

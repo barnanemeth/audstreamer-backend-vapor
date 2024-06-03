@@ -18,7 +18,7 @@ enum VideoDownloadError: Error {
     case videoAlreadyExists
 }
 
-final class VideoDownloadJob {
+struct VideoDownloadJob {
 
     // MARK: Constants
 
@@ -61,23 +61,7 @@ final class VideoDownloadJob {
     private let fileManager = FileManager.default
     private let bundleID = Environment.get("BUNDLE_ID")
     private let ffmpegLocation = Environment.get("FFMPEG_LOCATION")
-    private let httpClient = HTTPClient()
     private let s3Config = S3Config()
-    private let client: AWSClient
-    private let s3: S3
-
-    // MARK: Init
-
-    init() {
-        client = AWSClient(
-            credentialProvider: CredentialProviderFactory.static(
-                accessKeyId: s3Config.accessKeyID,
-                secretAccessKey: s3Config.secretAccessKey
-            ),
-            httpClientProvider: .shared(httpClient)
-        )
-        s3 = S3(client: client, endpoint: s3Config.endpointURL)
-    }
 }
 
 // MARK: - AsyncJob
@@ -93,22 +77,27 @@ extension VideoDownloadJob: AsyncJob {
 extension VideoDownloadJob {
     private func run(videoURL: URL, application: Application) async throws {
         do {
-            defer { try? client.syncShutdown() }
 
             try await checkExistingVideo(videoURL: videoURL, application: application)
 
             let downloadResult = try downloadVideo(videoURL: videoURL)
 
+            let s3 = createS3Instance()
+
             try await uploadFileAndDelete(
                 id: downloadResult.id,
                 directoryPath: application.directory.workingDirectory,
-                fileType: .mp3
+                fileType: .mp3,
+                s3: s3
             )
 
             let image = await uploadImageIfPossible(
                 downloadResult: downloadResult,
-                directoryPath: application.directory.workingDirectory
+                directoryPath: application.directory.workingDirectory,
+                s3: s3
             )
+
+            try? s3.client.syncShutdown()
 
             let episode = try await saveEpisode(downloadResult: downloadResult, image: image, database: application.db)
 
@@ -144,7 +133,18 @@ extension VideoDownloadJob {
         return try jsonDecoder.decode(VideoDownloadResult.self, from: data)
     }
 
-    private func uploadFileAndDelete(id: String, directoryPath: String, fileType: FileType) async throws {
+    private func createS3Instance() -> S3 {
+        let client = AWSClient(
+            credentialProvider: CredentialProviderFactory.static(
+                accessKeyId: s3Config.accessKeyID,
+                secretAccessKey: s3Config.secretAccessKey
+            ),
+            httpClientProvider: .createNew
+        )
+        return S3(client: client, endpoint: s3Config.endpointURL, timeout: .minutes(10))
+    }
+
+    private func uploadFileAndDelete(id: String, directoryPath: String, fileType: FileType, s3: S3) async throws {
         let filename = "\(id).\(fileType.fileExtension)"
         guard let fileURL = URL(string: "file://\(directoryPath)/\(filename)") else {
             throw VideoDownloadError.invalidURL
@@ -160,7 +160,9 @@ extension VideoDownloadJob {
         )
     }
 
-    private func uploadImageIfPossible(downloadResult: VideoDownloadResult, directoryPath: String) async -> String? {
+    private func uploadImageIfPossible(downloadResult: VideoDownloadResult,
+                                       directoryPath: String,
+                                       s3: S3) async -> String? {
         guard let thumbnailExtension = downloadResult.thumbnail?.lastPathComponent.components(separatedBy: ".").last else {
             return nil
         }
@@ -168,7 +170,8 @@ extension VideoDownloadJob {
             try await self.uploadFileAndDelete(
                 id: downloadResult.id,
                 directoryPath: directoryPath,
-                fileType: .image(thumbnailExtension)
+                fileType: .image(thumbnailExtension),
+                s3: s3
             )
             return "\(s3Config.publicURL)/\(downloadResult.id).\(thumbnailExtension)"
         } catch {

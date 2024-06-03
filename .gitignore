@@ -11,3 +11,4 @@ db.sqlite
 ! .env.example
 .vscode
 _pyenv/
+*.rdb

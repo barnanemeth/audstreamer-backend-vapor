@@ -15,7 +15,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/jwt-kit.git", from: "4.13.1"),
         .package(url: "https://github.com/JohnSundell/ShellOut", from: "2.3.0"),
         .package(url: "https://github.com/soto-project/soto", from: "6.8.0"),
-        .package(url: "https://github.com/m-barthelemy/vapor-queues-fluent-driver", from: "3.0.0-beta1")
+        .package(url: "https://github.com/vapor/queues-redis-driver", from: "1.1.1"),
     ],
     targets: [
         .executableTarget(
@@ -29,7 +29,7 @@ let package = Package(
                 .product(name: "JWTKit", package: "jwt-kit"),
                 .product(name: "ShellOut", package: "ShellOut"),
                 .product(name: "SotoS3", package: "soto"),
-                .product(name: "QueuesFluentDriver", package: "vapor-queues-fluent-driver")
+                .product(name: "QueuesRedisDriver", package: "queues-redis-driver")
             ]
         ),
         .testTarget(name: "AppTests", dependencies: [
