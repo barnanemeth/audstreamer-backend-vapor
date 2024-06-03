@@ -98,4 +98,6 @@ fileprivate func setupQueue(_ app: Application) throws {
     guard let redisURL = Environment.get("REDIS_URL") else { throw BootstrapError.missingRedisURL }
     try app.queues.use(.redis(url: redisURL))
     app.queues.add(VideoDownloadJob())
+
+    try app.queues.startInProcessJobs()
 }
