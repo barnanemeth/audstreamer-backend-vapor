@@ -27,6 +27,7 @@ final class Episode: Model, Content {
     @Field(key: "image") var image: String?
     @Field(key: "thumbnail") var thumbnail: String?
     @Field(key: "publishDate") var publishDate: Int
+    @Parent(key: "mediaSourceId") var mediaSource: MediaSource
     @Timestamp(key: "createdAt", on: .create) var createdAt: Date?
     @Timestamp(key: "updatedAt", on: .update) var updatedAt: Date?
 }

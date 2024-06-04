@@ -49,6 +49,8 @@ fileprivate func addAndRunMigrations(_ app: Application) throws {
     app.migrations.add(CreateEpisode())
     app.migrations.add(CreateDevice())
     app.migrations.add(CreateUserEpisodeMetadata())
+    app.migrations.add(CreateMediaSource())
+    app.migrations.add(AddEpisodeMediaSourceRelation())
 
     try app.autoMigrate().wait()
 }
