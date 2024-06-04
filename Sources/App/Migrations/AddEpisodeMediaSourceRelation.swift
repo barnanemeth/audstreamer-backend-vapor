@@ -31,6 +31,10 @@ struct AddEpisodeMediaSourceRelation: AsyncMigration {
         try await database.schema("episodes")
             .field("mediaSourceId", .uuid, .references("media_sources", "id"))
             .update()
+
+        try await (database as! SQLDatabase)
+            .raw("UPDATE episodes SET mediaSourceId = \(bind: mediaSource.requireID())")
+            .run()
     }
 
     func revert(on database: Database) async throws {
