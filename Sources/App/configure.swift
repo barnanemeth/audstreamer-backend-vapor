@@ -46,8 +46,6 @@ fileprivate func configureDatabase(_ app: Application) throws {
 }
 
 fileprivate func addAndRunMigrations(_ app: Application) throws {
-    guard !app.isRunningInQueueMode else { return }
-
     app.migrations.add(CreateEpisode())
     app.migrations.add(CreateDevice())
     app.migrations.add(CreateUserEpisodeMetadata())
