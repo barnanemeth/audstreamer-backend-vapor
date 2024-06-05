@@ -16,6 +16,7 @@ import Queues
 enum VideoDownloadError: Error {
     case invalidURL
     case videoAlreadyExists
+    case missingMediaSource
 }
 
 struct VideoDownloadJob {
@@ -182,6 +183,11 @@ extension VideoDownloadJob {
     private func saveEpisode(downloadResult: VideoDownloadResult,
                              image: String?,
                              database: any Database) async throws -> Episode {
+        // TODO: temporarily
+        guard let mediaSource = try await database.query(MediaSource.self).first() else {
+            throw VideoDownloadError.missingMediaSource
+        }
+
         let episode = Episode()
         episode.id = downloadResult.id
         episode.title = downloadResult.title
@@ -192,7 +198,9 @@ extension VideoDownloadJob {
         episode.image = image
         episode.thumbnail = image
         episode.publishDate = Int(Date.now.timeIntervalSince1970 * 1000)
+        episode.$mediaSource.id = try mediaSource.requireID()
         try await episode.save(on: database)
+
         return episode
     }
 
