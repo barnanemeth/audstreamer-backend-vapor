@@ -7,12 +7,12 @@ let package = Package(
        .macOS(.v13)
     ],
     dependencies: [
-        .package(url: "https://github.com/vapor/vapor.git", from: "4.89.0"),
-        .package(url: "https://github.com/vapor/fluent.git", from: "4.8.0"),
-        .package(url: "https://github.com/vapor/fluent-mysql-driver.git", from: "4.0.0"),
+        .package(url: "https://github.com/vapor/vapor.git", from: "4.101.2"),
+        .package(url: "https://github.com/vapor/fluent.git", from: "4.11.0"),
+        .package(url: "https://github.com/vapor/fluent-mysql-driver.git", from: "4.6.0"),
         .package(url: "https://github.com/barnanemeth/socket.io-vapor", from: "1.0.2"),
-        .package(url: "https://github.com/vapor/apns", from: "4.0.0"),
-        .package(url: "https://github.com/vapor/jwt-kit.git", from: "4.13.1"),
+        .package(url: "https://github.com/vapor/apns", from: "4.1.0"),
+        .package(url: "https://github.com/vapor/jwt-kit.git", from: "4.13.4"),
         .package(url: "https://github.com/JohnSundell/ShellOut", from: "2.3.0"),
         .package(url: "https://github.com/soto-project/soto", from: "6.8.0"),
         .package(url: "https://github.com/vapor/queues-redis-driver", from: "1.1.1"),
