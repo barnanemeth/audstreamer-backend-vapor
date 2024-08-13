@@ -1,1 +1,1 @@
-youtube_dl @ git+https://github.com/barnanemeth/youtube-dl@a08f2b7e4567cdc50c0614ee0a4ffdff49b8b6e6
+youtube_dl @ git+https://github.com/ytdl-org/youtube-dl@c5098961b04ce83f4615f2a846c84f803b072639
