@@ -62,6 +62,8 @@ struct VideoDownloadJob {
     private let fileManager = FileManager.default
     private let bundleID = Environment.get("BUNDLE_ID")
     private let ffmpegLocation = Environment.get("FFMPEG_LOCATION")
+    private let username = Environment.get("YOUTUBE_USERNAME")
+    private let password = Environment.get("YOUTUBE_PASSWORD")
     private let s3Config = S3Config()
 }
 
@@ -121,9 +123,15 @@ extension VideoDownloadJob {
 
     private func downloadVideo(videoURL: URL) throws -> VideoDownloadResult {
         var downloadOptions = Constant.baseDownloadOptions
+
         if let ffmpegLocation {
             downloadOptions.append(.ffmpegLocation(ffmpegLocation))
         }
+
+        if let username, let password {
+            downloadOptions.append(.authentication(username: username, password: password))
+        }
+
         let arguments = downloadOptions.map { $0.argument }
         let resultJson = try ShellUtil.downloadVideo(url: videoURL.absoluteString, with: arguments)
         return try decodeResult(from: resultJson)
