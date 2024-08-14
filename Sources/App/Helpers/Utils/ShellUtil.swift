@@ -91,7 +91,7 @@ extension ShellUtil {
         Logger.shellLogger.info("Installing downloader")
         try shellOut(to: [
             environmentActivationCommand,
-            "pip3 install youtube-dl git+https://github.com/barnanemeth/youtube-dl",
+            "pip3 install youtube-dl git+https://github.com/ytdl-org/youtube-dl@2024.07.11-nightly",
             "deactivate"
         ])
     }
