@@ -1,1 +1,1 @@
-youtube_dl @ git+https://github.com/ytdl-org/youtube-dl@c5098961b04ce83f4615f2a846c84f803b072639
+yt-dlp @ git+https://github.com/yt-dlp/yt-dlp@2024.08.06

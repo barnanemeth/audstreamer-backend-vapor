@@ -79,7 +79,7 @@ extension ShellUtil {
                 try shellOut(to: "\(LaunchBinary.python.location) -m venv \(Constant.defaultEnvironmentPath)")
                 try checkVirtualEnvironmentIfPossible()
             } catch {
-                Logger.shellLogger.error("Cannot reate virtual python environment")
+                Logger.shellLogger.error("Cannot create virtual python environment")
                 try shellOut(to: "rm -rf \(Constant.defaultEnvironmentPath)")
                 throw ShellUtilError.cannotCreateVirtualEnvironment(error)
             }
@@ -91,14 +91,14 @@ extension ShellUtil {
         Logger.shellLogger.info("Installing downloader")
         try shellOut(to: [
             environmentActivationCommand,
-            "pip3 install youtube-dl git+https://github.com/ytdl-org/youtube-dl@2024.07.11-nightly",
+            "pip3 install yt-dlp git+https://github.com/yt-dlp/yt-dlp@2024.08.06",
             "deactivate"
         ])
     }
 
     @discardableResult
     static func downloadVideo(url: String, with arguments: [String]) throws -> String {
-        var commands = ["youtube-dl \(arguments.map { $0 }.joined(separator: " ")) \(url)"]
+        var commands = ["yt-dlp \(arguments.map { $0 }.joined(separator: " ")) \(url)"]
         if useVirtualEnvironment {
             commands.insert(environmentActivationCommand, at: .zero)
             commands.append("deactivate")
