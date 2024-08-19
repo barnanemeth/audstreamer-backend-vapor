@@ -42,6 +42,7 @@ enum VideoDownloadOption {
     case preferFFMPEG
     case ffmpegLocation(String)
     case outputTemplate(String)
+    case authentication(username: String, password: String)
 
     var argument: String {
         switch self {
@@ -56,6 +57,7 @@ enum VideoDownloadOption {
         case .preferFFMPEG: "--prefer-ffmpeg"
         case let .ffmpegLocation(path): "--ffmpeg-location \(path)"
         case let .outputTemplate(template): "-o \"\(template)\""
+        case let .authentication(username, password): "--username \(username) --password \(password)"
         }
     }
 }
