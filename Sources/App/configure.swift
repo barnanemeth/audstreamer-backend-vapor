@@ -103,6 +103,10 @@ fileprivate func fetchAppleJWKSKeys(_ app: Application) async throws {
 fileprivate func setupQueue(_ app: Application) throws {
     guard let redisURL = Environment.get("REDIS_URL") else { throw BootstrapError.missingRedisURL }
 
-    try app.queues.use(.redis(url: redisURL))
-    app.queues.add(VideoDownloadJob())
+    do {
+        try app.queues.use(.redis(url: redisURL))
+        app.queues.add(VideoDownloadJob())
+    } catch {
+        app.logger.warning("Cannot initialize Redis - \(error.localizedDescription)")
+    }
 }
